@@ -1,0 +1,16 @@
+{
+  "name": "crustapi",
+  "version": "1.0.0",
+  "description": "a microservice to put/get file to/from crust network",
+  "main": "main.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "ShuttleProtocol",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.18.1",
+    "ipfs-http-client": "^57.0.3",
+    "request": "^2.88.2"
+  }
+}
