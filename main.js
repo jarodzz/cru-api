@@ -41,6 +41,30 @@ async function addFileToIpfs(fileContent) {
   };
 }
 
+async function getFileFromIpfs(cid) {
+  // 0. Construct web3 authed header
+  // Now support: ethereum-series, polkadot-series, solana, elrond, flow, near, ...
+  // Let's take ethereum as example
+  const pair = ethers.Wallet.createRandom();
+  const sig = await pair.signMessage(pair.address);
+  const authHeaderRaw = `eth-${pair.address}:${sig}`;
+  const authHeader = Buffer.from(authHeaderRaw).toString('base64');
+  const ipfsW3GW = 'https://crustipfs.xyz';
+
+  // 1. Create IPFS instant
+  const ipfs = create({
+      url: `${ipfsW3GW}/api/v0`,
+      headers: {
+          authorization: `Basic ${authHeader}`
+      }
+  });
+
+  const { content } = await ipfs.cat(cid);
+
+  return content;
+}
+
+
 // Create global chain instance
 const crustChainEndpoint = 'wss://rpc.crust.network';
 const api = new ApiPromise({
@@ -77,7 +101,6 @@ async function addFileToCru(cid, size) {
     });
 }
 
-
 app.get('/cruapi/health', (req, res) => {
   res.send('CruApi is up and running!')
 })
@@ -85,8 +108,9 @@ app.get('/cruapi/health', (req, res) => {
 app.post('/cruapi/getfile', (req, res) => {
     const fid = req.body['file'];
     console.log(fid);
+    const content = await getFileFromIpfs(fid);
     // retrieve file id from cru network, and return the content
-    res.json({'hello': 'world'})
+    res.json({'data': content})
 })
 
 app.post('/cruapi/putfile', (req, res) => {
