@@ -1,27 +1,21 @@
-import { create } from 'ipfs-http-client'
+import { create } from 'ipfs-http-client';
 import { ethers } from 'ethers';
 import { ApiPromise, WsProvider } from '@polkadot/api';
-import { typesBundleForPolkadot, crustTypes } from '@crustio/type-definitions';
 import { Keyring } from '@polkadot/keyring';
-import { KeyringPair } from '@polkadot/keyring/types';
 
 
-const express = require('express')
-const app = express()
-app.use(express.json());
+import pkg from 'express';
+const app = pkg()
+app.use(pkg.json());
 const port = 3000
 
 async function addFileToIpfs(fileContent) {
-  // 0. Construct web3 authed header
-  // Now support: ethereum-series, polkadot-series, solana, elrond, flow, near, ...
-  // Let's take ethereum as example
   const pair = ethers.Wallet.createRandom();
   const sig = await pair.signMessage(pair.address);
   const authHeaderRaw = `eth-${pair.address}:${sig}`;
   const authHeader = Buffer.from(authHeaderRaw).toString('base64');
   const ipfsW3GW = 'https://crustipfs.xyz';
 
-  // 1. Create IPFS instant
   const ipfs = create({
       url: `${ipfsW3GW}/api/v0`,
       headers: {
@@ -29,14 +23,13 @@ async function addFileToIpfs(fileContent) {
       }
   });
 
-  // 2. Add file to ipfs
-  const { cid } = await ipfs.add(fileContent);
+  const ifile = await ipfs.add(fileContent);
+  console.log(ifile);
 
-  // 3. Get file status from ipfs
-  const fileStat = await ipfs.files.stat("/ipfs/" + cid.path);
-
+  const fileStat = await ipfs.files.stat("/ipfs/" + ifile.path);
+  console.log(fileStat);
   return {
-      cid: cid.path,
+      cid: ifile.path,
       size: fileStat.cumulativeSize
   };
 }
@@ -66,14 +59,11 @@ async function getFileFromIpfs(cid) {
 
 
 // Create global chain instance
-const crustChainEndpoint = 'wss://rpc.crust.network';
-const api = new ApiPromise({
-    provider: new WsProvider(crustChainEndpoint),
-    typesBundle: typesBundleForPolkadot,
-});
+const wsProvider = new WsProvider('wss://rpc.crust.network');
+const api = await ApiPromise.create({provider: wsProvider});
 
 async function addFileToCru(cid, size) {
-    const tips = 0;
+    const tips = 0.01;
     const memo = '';
     const tx = api.tx.market.placeStorageOrder(cid, size, tips, memo);
 
@@ -105,7 +95,7 @@ app.get('/cruapi/health', (req, res) => {
   res.send('CruApi is up and running!')
 })
 
-app.post('/cruapi/getfile', (req, res) => {
+app.post('/cruapi/getfile', async (req, res) => {
     const fid = req.body['file'];
     console.log(fid);
     const content = await getFileFromIpfs(fid);
@@ -113,10 +103,11 @@ app.post('/cruapi/getfile', (req, res) => {
     res.json({'data': content})
 })
 
-app.post('/cruapi/putfile', (req, res) => {
+app.post('/cruapi/putfile', async (req, res) => {
     const fcontent = req.body['file'];
-    console.log(fcontent);
+    console.log("adding file ", fcontent);
     const ipfs_result = await addFileToIpfs(fcontent);
+    console.log("ipfs result ", ipfs_result);
     const cru_result = await addFileToCru(ipfs_result['cid'], ipfs_result['size']);
     // upload file to crust network, and return the id
 })
