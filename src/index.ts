@@ -26,18 +26,18 @@ app.get('/cruapi/health', (req: any, res: any) => {
 })
 
 app.post('/cruapi/getfile', async (req: any, res: any) => {
-    const fid = req.body['file'];
+    const fid = req.body['key'];
     console.log(fid);
     const content = await catFile(fid);
     // retrieve file id from cru network, and return the content
-    res.json({'data': content})
+    res.json({key: content})
 })
 
 app.post('/cruapi/putfile', async (req, res) => {
     console.log(req);
-    const fcontent = req.body['file'];
+    const fcontent = req.body['key'];
     const cid = await putFileTo(fcontent);
-    res.json({cid: cid})
+    res.json({key: cid})
 })
 
 app.listen(port, () => {
