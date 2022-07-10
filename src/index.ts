@@ -91,12 +91,13 @@ async function catFile(cid: any) {
         }
     });
     const content = await ipfsRemote.cat(cid);
+    var buffer = "";
     for await (const item of content) {
         console.log('item', item.toString());
-        return item.toString();
+        buffer += item.toString();
     }
+    return buffer;
 }
-
 
 async function placeStorageOrder(fileCid: string, fileSize: number) {
     // 1. Construct place-storage-order tx
